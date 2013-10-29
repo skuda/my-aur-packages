@@ -4,7 +4,7 @@
 
 pkgname=mingw-w64-qt4
 pkgver=4.8.5
-pkgrel=3
+pkgrel=4
 pkgdesc='A cross-platform application and UI framework (mingw-w64)'
 arch=('i686' 'x86_64')
 url="http://qt-project.org/"
@@ -23,7 +23,7 @@ depends=(
 makedepends=('mingw-w64-gcc' 'mingw-w64-libmariadbclient' 'mingw-w64-postgresql-libs')
 optdepends=('mingw-w64-postgresql-libs: PostgreSQL driver'
             'mingw-w64-libmariadbclient: MariaDB driver')
-options=(!strip !buildflags !libtool)
+options=(!strip !buildflags !libtool staticlibs)
 replaces=("${pkgname/qt4/qt}<=4.8.4")
 conflicts=("${pkgname/qt4/qt}")
 _pkgfqn="qt-everywhere-opensource-src-${pkgver}"
@@ -216,8 +216,8 @@ build() {
     fi
 
     if isRelease; then
-      mkdir -p ../${_arch}-release
-      pushd ../${_arch}-release
+      mkdir -p ../${_arch}
+      pushd ../${_arch}
       ../${_pkgfqn}/configure \
         -release \
         -shared \
@@ -240,9 +240,9 @@ package() {
     fi
 
     if isRelease; then
-      make install -C ../${_arch}-release INSTALL_ROOT="${pkgdir}"
+      make install -C ../${_arch} INSTALL_ROOT="${pkgdir}"
       # Also install the lrelease tool
-      make -C ../${_arch}-release/tools/linguist/lrelease install INSTALL_ROOT="${pkgdir}"
+      make -C ../${_arch}/tools/linguist/lrelease install INSTALL_ROOT="${pkgdir}"
       # move QtUiTools4.dll from lib/ to bin/
       mv "${pkgdir}"/usr/${_arch}/lib/QtUiTools4.dll ${pkgdir}/usr/${_arch}/bin/
       # add links with version suffix for convenience
@@ -252,7 +252,7 @@ package() {
       mkdir -p "${pkgdir}"/usr/bin
       mkdir -p "${pkgdir}"/usr/${_arch}/bin
 
-      install -m0755 ../${_arch}-release/bin/qmake "${pkgdir}"/usr/${_arch}/bin
+      install -m0755 ../${_arch}/bin/qmake "${pkgdir}"/usr/${_arch}/bin
       ln -s ../${_arch}/bin/qmake "${pkgdir}"/usr/bin/${_arch}-qmake
 
       for tool in lrelease moc rcc uic ; do
@@ -290,25 +290,26 @@ package() {
 
     if isStatic; then
       # Install the static libraries in a temporary prefix so we can merge everything together properly
-      mkdir -p "${pkgdir}"/static
-      make install -C ../${_arch}-static INSTALL_ROOT="${pkgdir}"/static
+      make install -C ../${_arch}-static INSTALL_ROOT="${pkgdir}"
 
       # Drop the qtmain static library from the static tree as
       # it's already part of the main tree
-      rm -f "${pkgdir}"/static/usr/${_arch}/lib/libqtmain*
+      rm -f "${pkgdir}"/usr/${_arch}/lib/libqtmain*
 
       # Give the real static libraries the correct filename to avoid future conflicts with Qt5
-      for FN in "${pkgdir}"/static/usr/${_arch}/lib/*.a ; do
+      for FN in "${pkgdir}"/usr/${_arch}/lib/*.a ; do
         FN_NEW=$(echo $FN | sed s/'.a$'/'4.a'/)
         mv $FN $FN_NEW
       done
 
-      # Move the static libraries from the static tree to the main tree
-      mkdir -p "${pkgdir}"/usr/${_arch}/lib
-      mv "${pkgdir}"/static/usr/${_arch}/lib/*.a "${pkgdir}"/usr/${_arch}/lib/
+      # Delete files already provided by the base package
+      rm -rf "${pkgdir}"/usr/${_arch}/{bin,include,share,lib/pkgconfig}
+      rm -f  "${pkgdir}"/usr/${_arch}/imports/Qt/labs/*/qmldir
+      # I'm assuming these prl files aren't needed
+      rm -f  "${pkgdir}"/usr/${_arch}/{lib,lib/qt4/plugins/*,imports/Qt/labs/*}/*.prl
 
-      # Clean up the static trees as we've now merged all interesting pieces
-      rm -rf "${pkgdir}"/static
+      # Move imports to lib/qt4, just like the plugins
+      mv "${pkgdir}"/usr/${_arch}/imports "${pkgdir}"/usr/${_arch}/lib/qt4/
     fi
 
     if isShared; then
