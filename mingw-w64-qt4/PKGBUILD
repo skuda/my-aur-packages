@@ -4,7 +4,7 @@
 
 pkgname=mingw-w64-qt4
 pkgver=4.8.5
-pkgrel=4
+pkgrel=5
 pkgdesc='A cross-platform application and UI framework (mingw-w64)'
 arch=('i686' 'x86_64')
 url="http://qt-project.org/"
@@ -122,9 +122,11 @@ prepare() {
   install -m644 "${srcdir}"/qplatformdefs.h mkspecs/win32-g++-cross/
   install -m644 "${srcdir}"/qplatformdefs.h mkspecs/win32-g++-cross-x64/
   
-  # fix mysql plugin
-  sed -e 's|lmysqlclient_r|lmysql|g' -i "${srcdir}"/"${_pkgfqn}"/config.tests/unix/mysql_r/mysql_r.pro
-  sed -e 's|lmysqlclient|lmysql|g' -i "${srcdir}"/"${_pkgfqn}"/config.tests/unix/mysql/mysql.pro
+  # MySQL lib is -lmysql not mysqlclient, so fix that in config tests
+  sed -e 's|lmysqlclient_r|lmysql|g' -i "${srcdir}/${_pkgfqn}/config.tests/unix/mysql_r/mysql_r.pro"
+  sed -e 's|lmysqlclient|lmysql|g' -i "${srcdir}/${_pkgfqn}/config.tests/unix/mysql/mysql.pro"
+  # fix configure to not fails in case you have system's libmariadbclient installed
+  sed -e "s|mysql_config|mysql_config_doesnt_exists|g" -i "${srcdir}/${_pkgfqn}/configure"
 }
 
 build() {
@@ -224,6 +226,7 @@ build() {
       make
       popd
     fi
+  
   done
 }
 
@@ -340,25 +343,22 @@ package() {
     fi
 
     # And finaly, strip the binaries
-    if isShared; then
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/bin/*.dll
-    fi
+    if [ !isDebug  ]; then
+      if isShared; then
+        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/bin/*.dll
+      fi
 
-    if isRelease; then
       ${_arch}-strip --strip-all "${pkgdir}"/usr/${_arch}/bin/*.exe
-    else
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/*4.dll.a # dynamic lib interfaces
-    fi
-
-    if isStatic; then
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/*4.a # static libs
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/libqtmain*.a
-    else
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/libqtmain*.a
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/*4.dll.a # dynamic lib interfaces
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.dll
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.dll
-      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/QtWebKit/*.dll
+     
+      if isStatic; then
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*4.a # static libs
+      else
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/libqtmain*.a
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*4.dll.a # dynamic lib interfaces
+        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.dll
+        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.dll
+        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/QtWebKit/*.dll
+      fi
     fi
     
     if isRelease; then
