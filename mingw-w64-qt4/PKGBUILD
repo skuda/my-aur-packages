@@ -13,14 +13,13 @@ depends=(
   'mingw-w64-crt'
   'mingw-w64-zlib'
   'mingw-w64-libjpeg-turbo'
-  'mingw-w64-win-iconv'
+  'mingw-w64-libiconv'
   'mingw-w64-libtiff'
   'mingw-w64-sqlite3'
   'mingw-w64-libpng'
   'mingw-w64-openssl'
-  'mingw-w64-dbus'
-  'mingw-w64-pkg-config')
-makedepends=('mingw-w64-gcc' 'mingw-w64-libmariadbclient' 'mingw-w64-postgresql-libs')
+  'mingw-w64-dbus')
+makedepends=('mingw-w64-gcc' 'mingw-w64-libmariadbclient' 'mingw-w64-postgresql-libs' 'mingw-w64-pkg-config')
 optdepends=('mingw-w64-postgresql-libs: PostgreSQL driver'
             'mingw-w64-libmariadbclient: MariaDB driver')
 options=(!strip !buildflags !libtool staticlibs)
@@ -244,7 +243,7 @@ package() {
       # Also install the lrelease tool
       make -C ../${_arch}/tools/linguist/lrelease install INSTALL_ROOT="${pkgdir}"
       # move QtUiTools4.dll from lib/ to bin/
-      mv "${pkgdir}"/usr/${_arch}/lib/QtUiTools4.dll ${pkgdir}/usr/${_arch}/bin/
+      mv "${pkgdir}"/usr/${_arch}/lib/QtUiTools4.dll "${pkgdir}"/usr/${_arch}/bin/
       # add links with version suffix for convenience
       ln -s libqtmain.a "${pkgdir}"/usr/${_arch}/lib/libqtmain4.a
 
@@ -337,18 +336,23 @@ package() {
       rm -rf "${pkgdir}"/usr/${_arch}/share/qt4/phrasebooks/
 
       # Move imports to lib/qt4, just like the plugins
-      mv "${pkgdir}"/usr/${_arch}/imports ${pkgdir}/usr/${_arch}/lib/qt4/
+      mv "${pkgdir}"/usr/${_arch}/imports "${pkgdir}"/usr/${_arch}/lib/qt4/
     fi
 
     # And finaly, strip the binaries
     if isShared; then
       ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/bin/*.dll
     fi
+
     if isRelease; then
       ${_arch}-strip --strip-all "${pkgdir}"/usr/${_arch}/bin/*.exe
+    else
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/*4.dll.a # dynamic lib interfaces
     fi
+
     if isStatic; then
-      ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*4.a # static libs
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/*4.a # static libs
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/libqtmain*.a
     else
       ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/libqtmain*.a
       ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/*4.dll.a # dynamic lib interfaces
