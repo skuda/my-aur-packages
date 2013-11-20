@@ -357,9 +357,11 @@ package() {
         ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.a
         ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.a
       fi
-        
-      # Apply a patch which incorporates all the differences between
-      # the static and the shared library build while staying compatible
+    fi
+    
+    # Apply a patch which incorporates all the differences between
+    # the static and the shared library build while staying compatible
+    if isRelease; then
       pushd "${pkgdir}"/usr/"${_arch}"
       patch -Np0 -i "${srcdir}"/qt-merge-static-and-shared-library-trees.patch
       popd
