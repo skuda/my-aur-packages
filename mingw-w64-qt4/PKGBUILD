@@ -344,29 +344,26 @@ package() {
 
     # And finaly, strip the binaries
     if [ !isDebug  ]; then
-      if isShared; then
+      if isRelease; then
+        ${_arch}-strip --strip-all "${pkgdir}"/usr/${_arch}/bin/*.exe
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*.a
         ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/bin/*.dll
-      fi
-
-      ${_arch}-strip --strip-all "${pkgdir}"/usr/${_arch}/bin/*.exe
-     
-      if isStatic; then
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*4.a # static libs
-      else
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/libqtmain*.a
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*4.dll.a # dynamic lib interfaces
         ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.dll
         ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.dll
         ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/QtWebKit/*.dll
       fi
-    fi
-    
-    if isRelease; then
+      if isStatic; then
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*.a
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.a
+        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.a
+      fi
+        
       # Apply a patch which incorporates all the differences between
       # the static and the shared library build while staying compatible
       pushd "${pkgdir}"/usr/"${_arch}"
       patch -Np0 -i "${srcdir}"/qt-merge-static-and-shared-library-trees.patch
       popd
     fi
+
   done
 }
