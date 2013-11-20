@@ -343,20 +343,18 @@ package() {
     fi
 
     # And finaly, strip the binaries
-    if [ !isDebug  ]; then
-      if isRelease; then
-        ${_arch}-strip --strip-all "${pkgdir}"/usr/${_arch}/bin/*.exe
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*.a
-        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/bin/*.dll
-        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.dll
-        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.dll
-        ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/QtWebKit/*.dll
-      fi
-      if isStatic; then
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*.a
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.a
-        ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.a
-      fi
+    if isRelease; then
+      ${_arch}-strip --strip-all "${pkgdir}"/usr/${_arch}/bin/*.exe
+      ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*.a
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/bin/*.dll
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.dll
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.dll
+      ${_arch}-strip --strip-unneeded "${pkgdir}"/usr/${_arch}/lib/qt4/imports/QtWebKit/*.dll
+    fi
+    if isStatic; then
+      ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/*.a
+      ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/plugins/*/*.a
+      ${_arch}-strip --strip-debug "${pkgdir}"/usr/${_arch}/lib/qt4/imports/Qt/labs/*/*.a
     fi
     
     # Apply a patch which incorporates all the differences between
